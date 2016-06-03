@@ -1,0 +1,11 @@
+message SensorData {
+    optional uint64 timestamp = 1;
+    optional uint32 temperatureSampleRate = 2;
+    optional uint32 humiditySampleRate = 3;
+    optional uint32 audioSampleRate = 4;
+    optional uint32 lightSampleRate = 5;
+    repeated uint32 temperatureData = 6 [packed=true];
+    repeated uint32 humidityData = 7 [packed=true];
+    repeated uint32 audioData = 8 [packed=true];
+    repeated uint32 lightData = 9 [packed=true];
+}
