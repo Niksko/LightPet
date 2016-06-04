@@ -1,0 +1,2 @@
+# Ignore .credentials files used to hold wifi user passes
+*.credentials.*

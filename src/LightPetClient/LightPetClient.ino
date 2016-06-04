@@ -7,6 +7,12 @@
 #include <TaskScheduler.h>
 #include <Wire.h>
 #include <SI7021.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+
+// The following file should #define two values, WIFI_SSID and WIFI_PASSWORD, the ssid and pass for the network you
+// want to connect to
+#include "wifi.credentials.h"
 
 // Relevant pin definitions. MUX pins are as per datasheet
 #define MUX_A_PIN D3
@@ -31,6 +37,15 @@
 
 // Define the size of the output buffer
 #define OUTPUT_BUFFER_SIZE 512
+
+// Define the UDP port we will use for communication
+#define UDP_PORT 22145
+
+// Define the light pet client magic message. This will indicate that this device is a light pet client
+#define CLIENT_SERVICE_MESSAGE "LIGHT PET CLIENT SERVICE ADVERTISEMENT MESSAGE"
+
+// Define how often we advertise ourselves in seconds
+#define ADVERTISEMENT_RATE 10
 
 // Variables used to store data values read from sensors
 uint16_t microphoneData[MICROPHONE_SAMPLE_RATE + DATA_BUFFER_SIZE];
@@ -60,15 +75,23 @@ void readMicCallback();
 void readLightCallback();
 void readTempHumidityCallback();
 void sendDataPacketCallback();
+void sendClientServiceMessageCallback();
 
 // Task objects used for task scheduling
 Task readMic(MS_PER_SECOND / MICROPHONE_SAMPLE_RATE, TASK_FOREVER, &readMicCallback);
 Task readLight(MS_PER_SECOND / LIGHT_SAMPLE_RATE, TASK_FOREVER, &readLightCallback);
 Task readTempHumidity(MS_PER_SECOND / TEMP_HUMIDITY_SAMPLE_RATE, TASK_FOREVER, &readTempHumidityCallback);
 Task sendDataPacket(MS_PER_SECOND / DATA_SEND_RATE, TASK_FOREVER, &sendDataPacketCallback);
+Task sendClientServiceMessage(MS_PER_SECOND * ADVERTISEMENT_RATE, TASK_FOREVER, &sendClientServiceMessageCallback);
 
 // Set up a scheduler to schedule all of these tasks
 Scheduler taskRunner;
+
+// An IPAddress to hold the computed broadcast IP
+IPAddress broadcastIP;
+
+// A UDP instance
+WiFiUDP udp;
 
 void setup() {
   // Set up serial
@@ -81,15 +104,35 @@ void setup() {
   // Start the I2C connection with the si7021
   sensor.begin(SDA_PIN, SCL_PIN);
 
+  // Connect to the wifi
+  Serial.print("Connecting to:");
+  Serial.println(WIFI_SSID);
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  
+  // Wait until the wifi is connected
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  // Compute the broadcast IP
+  broadcastIP = ~WiFi.subnetMask() | WiFi.gatewayIP();
+
+  // Start up the UDP service
+  udp.begin(UDP_PORT);
+
   // Add all the tasks to the runner and enable them
   taskRunner.addTask(readMic);
   taskRunner.addTask(readLight);
   taskRunner.addTask(readTempHumidity);
   taskRunner.addTask(sendDataPacket);
+  taskRunner.addTask(sendClientServiceMessage);
   readMic.enable();
   readLight.enable();
   readTempHumidity.enable();
   sendDataPacket.enable();
+  sendClientServiceMessage.enable();
 }
 
 // Helper function that configures the input select lines of the MUX so that the mic is feeding data to A0
@@ -122,6 +165,13 @@ void readTempHumidityCallback() {
   humidityData[humidityDataSize] = envData.humidityBasisPoints;
   temperatureDataSize = temperatureDataSize + 1;
   humidityDataSize = humidityDataSize + 1;
+}
+
+// Send the special UDP packaet advertising this device as a light pet client device
+void sendClientServiceMessageCallback() {
+  udp.beginPacket(broadcastIP, UDP_PORT);
+  udp.write(CLIENT_SERVICE_MESSAGE);
+  udp.endPacket();
 }
 
 void sendDataPacketCallback() {
@@ -323,4 +373,3 @@ bool encodeAudioData(pb_ostream_t *stream, const pb_field_t *field, void * const
 void loop() {
   taskRunner.execute();
 }
-
