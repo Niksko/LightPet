@@ -8,4 +8,5 @@ message SensorData {
     repeated uint32 humidityData = 7 [packed=true];
     repeated uint32 audioData = 8 [packed=true];
     repeated uint32 lightData = 9 [packed=true];
+    optional uint32 chipID = 10;
 }

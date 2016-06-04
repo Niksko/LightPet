@@ -143,6 +143,9 @@ void sendDataPacketCallback() {
   outputData.lightSampleRate = LIGHT_SAMPLE_RATE;
   outputData.has_lightSampleRate = true;
 
+  outputData.chipID = ESP.getChipId();
+  outputData.has_chipID = true;
+
   // Setup the callback functions for the variable length packed data segments
   outputData.temperatureData.funcs.encode = &encodeTemperatureData;
   outputData.humidityData.funcs.encode = &encodeHumidityData;
