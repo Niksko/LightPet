@@ -203,13 +203,16 @@ void listenForUDPPacketCallback() {
         serverIP = udp.remoteIP();
       }
       else {
-        // The message is a data message. For the moment just print it, but eventually this will
-        // be where we decode the protobuf format and update state based on the data
-        for (int i = 0; i < readLength; i++) {
-          Serial.print(packetBuffer[i]);
-          Serial.print(" ");
+        // Only accept packets from the IP matching our light pet server
+        if (serverIP == udp.remoteIP()) {
+          // The message is a data message. For the moment just print it, but eventually this will
+          // be where we decode the protobuf format and update state based on the data
+          for (int i = 0; i < readLength; i++) {
+            Serial.print(packetBuffer[i]);
+            Serial.print(" ");
+          }
+          Serial.print("\n");
         }
-        Serial.print("\n");
       }
     }
   }
