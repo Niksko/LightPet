@@ -35,6 +35,9 @@
 // Define how often to generate a data packet. Value in Hz
 #define DATA_SEND_RATE 1
 
+// Define how often to check for received UDP packets. Value in Hz
+#define DATA_RECEIVE_RATE 50
+
 // Define the size of the output buffer
 #define OUTPUT_BUFFER_SIZE 512
 
@@ -44,8 +47,14 @@
 // Define the light pet client magic message. This will indicate that this device is a light pet client
 #define CLIENT_SERVICE_MESSAGE "LIGHT PET CLIENT SERVICE ADVERTISEMENT MESSAGE"
 
+// Define the light pet server magic message. This indicates that the source IP hosts a light pet server
+#define SERVER_SERVICE_MESSAGE "LIGHT PET SERVER SERVICE ADVERTISEMENT MESSAGE"
+
 // Define how often we advertise ourselves in seconds
 #define ADVERTISEMENT_RATE 10
+
+// Define the max size of our udp packet
+#define UDP_MAX_SIZE 1024
 
 // Variables used to store data values read from sensors
 uint16_t microphoneData[MICROPHONE_SAMPLE_RATE + DATA_BUFFER_SIZE];
@@ -76,6 +85,7 @@ void readLightCallback();
 void readTempHumidityCallback();
 void sendDataPacketCallback();
 void sendClientServiceMessageCallback();
+void listenForUDPPacketCallback();
 
 // Task objects used for task scheduling
 Task readMic(MS_PER_SECOND / MICROPHONE_SAMPLE_RATE, TASK_FOREVER, &readMicCallback);
@@ -83,12 +93,16 @@ Task readLight(MS_PER_SECOND / LIGHT_SAMPLE_RATE, TASK_FOREVER, &readLightCallba
 Task readTempHumidity(MS_PER_SECOND / TEMP_HUMIDITY_SAMPLE_RATE, TASK_FOREVER, &readTempHumidityCallback);
 Task sendDataPacket(MS_PER_SECOND / DATA_SEND_RATE, TASK_FOREVER, &sendDataPacketCallback);
 Task sendClientServiceMessage(MS_PER_SECOND * ADVERTISEMENT_RATE, TASK_FOREVER, &sendClientServiceMessageCallback);
+Task listenForUDPPacket(MS_PER_SECOND / DATA_RECEIVE_RATE, TASK_FOREVER, &listenForUDPPacketCallback);
 
 // Set up a scheduler to schedule all of these tasks
 Scheduler taskRunner;
 
 // An IPAddress to hold the computed broadcast IP
 IPAddress broadcastIP;
+
+// An IPAddress to hold the server that we will send our UDP packets to
+IPAddress serverIP = {0, 0, 0, 0};
 
 // A UDP instance
 WiFiUDP udp;
@@ -172,6 +186,33 @@ void sendClientServiceMessageCallback() {
   udp.beginPacket(broadcastIP, UDP_PORT);
   udp.write(CLIENT_SERVICE_MESSAGE);
   udp.endPacket();
+}
+
+void listenForUDPPacketCallback() {
+  int packetSize = udp.parsePacket();
+  if (packetSize) {
+    // Check the remote port to make sure it matches the port we listen on
+    if (udp.remotePort() == UDP_PORT) {
+      // Read the packet into a packetBuffer
+      char packetBuffer[UDP_MAX_SIZE];
+      int readLength = udp.read(packetBuffer, UDP_MAX_SIZE);
+      // Null terminate the packet data so that we can do string comparison below
+      packetBuffer[readLength] = 0;
+      // Depending on the contents, take different action
+      if (packetBuffer == SERVER_SERVICE_MESSAGE) {
+        serverIP = udp.remoteIP();
+      }
+      else {
+        // The message is a data message. For the moment just print it, but eventually this will
+        // be where we decode the protobuf format and update state based on the data
+        for (int i = 0; i < readLength; i++) {
+          Serial.print(packetBuffer[i]);
+          Serial.print(" ");
+        }
+        Serial.print("\n");
+      }
+    }
+  }
 }
 
 void sendDataPacketCallback() {
