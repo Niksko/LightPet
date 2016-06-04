@@ -102,7 +102,7 @@ Scheduler taskRunner;
 IPAddress broadcastIP;
 
 // An IPAddress to hold the server that we will send our UDP packets to
-IPAddress serverIP = {0, 0, 0, 0};
+IPAddress serverIP(0, 0, 0, 0);
 
 // A UDP instance
 WiFiUDP udp;
@@ -259,12 +259,21 @@ void sendDataPacketCallback() {
     Serial.println(PB_GET_ERROR(&outputStream));
   }
   else {
-    Serial.println(message_length);
-    for (int i = 0; i < message_length; i++) {
-      Serial.print(outputBuffer[i]);
-      Serial.print(" ");
+    // If we have a real server, not just the default 0.0.0.0 IP
+    if (serverIP != IPAddress(0, 0, 0, 0)) {
+      // Send the encoded data from the output buffer
+      udp.beginPacket(serverIP, UDP_PORT);
+      udp.write(outputBuffer, message_length);
+      udp.endPacket();
     }
-    Serial.print("\n");
+    else {
+      // Just print to serial
+      for (int i = 0; i < message_length; i++) {
+        Serial.print(outputBuffer[i]);
+        Serial.print(" ");
+      }
+      Serial.print("\n");
+    }
   }
 
   // Reset the values that we use to track the size of our data arrays to zero
