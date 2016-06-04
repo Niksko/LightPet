@@ -65,5 +65,8 @@ The first two libraries should be installed by downloading a zip of the master b
 and then installing them in the Arduino IDE with Sketch->Include Library->Add .ZIP library. The TaskScheduler library
 should be available via the Sketch->Include Library->Manage Libraries interface.
 
+You'll also need to add the ESP8266 boards to your Arduino IDE by following [these](https://github.com/esp8266/Arduino)
+instructions. This should also add the ESP8266 specific libraries we will be using.
+
 Currently the code writes the protobuf encoded data to the Serial connection, but the next step will be to send
 this to a location on the network via UDP.
