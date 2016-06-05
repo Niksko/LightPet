@@ -107,6 +107,9 @@ IPAddress serverIP(0, 0, 0, 0);
 // A UDP instance
 WiFiUDP udp;
 
+// Set up the server magic string in a constant string variable
+const char serverMagicString[] = SERVER_SERVICE_MESSAGE;
+
 void setup() {
   // Set up serial
   Serial.begin(38400);
@@ -200,8 +203,9 @@ void listenForUDPPacketCallback() {
       int readLength = udp.read(packetBuffer, UDP_MAX_SIZE);
       // Null terminate the packet data so that we can do string comparison below
       packetBuffer[readLength] = 0;
+
       // Depending on the contents, take different action
-      if (packetBuffer == SERVER_SERVICE_MESSAGE) {
+      if (strcmp(packetBuffer, serverMagicString) == 0) {
         serverIP = udp.remoteIP();
       }
       else {
