@@ -142,11 +142,13 @@ void setup() {
   taskRunner.addTask(readTempHumidity);
   taskRunner.addTask(sendDataPacket);
   taskRunner.addTask(sendClientServiceMessage);
+  taskRunner.addTask(listenForUDPPacket);
   readMic.enable();
   readLight.enable();
   readTempHumidity.enable();
   sendDataPacket.enable();
   sendClientServiceMessage.enable();
+  listenForUDPPacket.enable();
 }
 
 // Helper function that configures the input select lines of the MUX so that the mic is feeding data to A0
