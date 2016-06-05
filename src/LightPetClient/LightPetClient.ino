@@ -196,29 +196,26 @@ void sendClientServiceMessageCallback() {
 void listenForUDPPacketCallback() {
   int packetSize = udp.parsePacket();
   if (packetSize) {
-    // Check the remote port to make sure it matches the port we listen on
-    if (udp.remotePort() == UDP_PORT) {
-      // Read the packet into a packetBuffer
-      char packetBuffer[UDP_MAX_SIZE];
-      int readLength = udp.read(packetBuffer, UDP_MAX_SIZE);
-      // Null terminate the packet data so that we can do string comparison below
-      packetBuffer[readLength] = 0;
+    // Read the packet into a packetBuffer
+    char packetBuffer[UDP_MAX_SIZE];
+    int readLength = udp.read(packetBuffer, UDP_MAX_SIZE);
+    // Null terminate the packet data so that we can do string comparison below
+    packetBuffer[readLength] = 0;
 
-      // Depending on the contents, take different action
-      if (strcmp(packetBuffer, serverMagicString) == 0) {
-        serverIP = udp.remoteIP();
-      }
-      else {
-        // Only accept packets from the IP matching our light pet server
-        if (serverIP == udp.remoteIP()) {
-          // The message is a data message. For the moment just print it, but eventually this will
-          // be where we decode the protobuf format and update state based on the data
-          for (int i = 0; i < readLength; i++) {
-            Serial.print(packetBuffer[i]);
-            Serial.print(" ");
-          }
-          Serial.print("\n");
+    // Depending on the contents, take different action
+    if (strcmp(packetBuffer, serverMagicString) == 0) {
+      serverIP = udp.remoteIP();
+    }
+    else {
+      // Only accept packets from the IP matching our light pet server
+      if (serverIP == udp.remoteIP()) {
+        // The message is a data message. For the moment just print it, but eventually this will
+        // be where we decode the protobuf format and update state based on the data
+        for (int i = 0; i < readLength; i++) {
+          Serial.print(packetBuffer[i]);
+          Serial.print(" ");
         }
+        Serial.print("\n");
       }
     }
   }
