@@ -41,15 +41,6 @@
 // Define the size of the output buffer
 #define OUTPUT_BUFFER_SIZE 512
 
-// Define the UDP port we will use for communication
-#define UDP_PORT 22145
-
-// Define the light pet client magic message. This will indicate that this device is a light pet client
-#define CLIENT_SERVICE_MESSAGE "LIGHT PET CLIENT SERVICE ADVERTISEMENT MESSAGE"
-
-// Define the light pet server magic message. This indicates that the source IP hosts a light pet server
-#define SERVER_SERVICE_MESSAGE "LIGHT PET SERVER SERVICE ADVERTISEMENT MESSAGE"
-
 // Define how often we advertise ourselves in seconds
 #define ADVERTISEMENT_RATE 10
 
