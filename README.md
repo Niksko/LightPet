@@ -59,12 +59,11 @@ are:
 
 * [A library for the SI7021 from Low Power Labs](https://github.com/LowPowerLab/SI7021)
 * [The nanopb library for dealing with protobufs](https://github.com/nanopb/nanopb)
-* [ArduinoJson for parsing configuration information](https://github.com/bblanchon/ArduinoJson)
 * The TaskScheduler library for making use of protothreading.
 
 The first two libraries should be installed by downloading a zip of the master branch from the linked github pages
-and then installing them in the Arduino IDE with Sketch->Include Library->Add .ZIP library. The TaskScheduler and
-ArduinoJson libraries should be available via the Sketch->Include Library->Manage Libraries interface.
+and then installing them in the Arduino IDE with Sketch->Include Library->Add .ZIP library. The TaskScheduler library
+should be available via the Sketch->Include Library->Manage Libraries interface.
 
 You'll also need to add the ESP8266 boards to your Arduino IDE by following [these](https://github.com/esp8266/Arduino)
 instructions. This should also add the ESP8266 specific libraries we will be using.
