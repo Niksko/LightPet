@@ -3,6 +3,7 @@
 #include <pb_encode.h>
 #include <pb_decode.h>
 #include "sensorData.pb.h"
+#include "configuration.h"
 
 #include <TaskScheduler.h>
 #include <Wire.h>
