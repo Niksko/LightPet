@@ -1,10 +1,16 @@
 # Load a JSON configuration file and write it's contents to a c header file
 import json
+import sys
 from contextlib import redirect_stdout
 
 
 def main():
-    with open('./configuration.json', "r") as config_file:
+    # Check that we got an argument
+    if len(sys.argv) < 2:
+        raise Exception("Invalid number of arguments passed. Expected one argument for input filename.")
+    # Get the configuration file name
+    filename = sys.argv[1]
+    with open(filename, "r") as config_file:
         config = json.load(config_file)
         # Get the top level config object
         config = config["config"]
