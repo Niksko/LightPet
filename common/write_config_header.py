@@ -4,16 +4,24 @@ import sys
 from contextlib import redirect_stdout
 
 
+def load_config_fromfile(filename):
+    with open(filename, "r") as config_file:
+        config = json.load(config_file)
+        # Get the top level config object
+        config = config["config"]
+
+    return config
+
+
 def main():
     # Check that we got an argument
     if len(sys.argv) < 2:
         raise Exception("Invalid number of arguments passed. Expected one argument for input filename.")
     # Get the configuration file name
     filename = sys.argv[1]
-    with open(filename, "r") as config_file:
-        config = json.load(config_file)
-        # Get the top level config object
-        config = config["config"]
+
+    # Get the config object
+    config = load_config_fromfile(filename=filename)
 
     with open('./configuration.h', "w") as output_file:
         with redirect_stdout(output_file):
