@@ -1,2 +1,5 @@
 # Ignore configuration.h files
 configuration.h
+
+# Ignore protobuf generated files
+sensorData.pb.*

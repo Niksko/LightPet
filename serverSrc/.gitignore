@@ -1,0 +1,2 @@
+# Ignore protobuf generated files
+sensorData_pb2.py
