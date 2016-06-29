@@ -231,10 +231,10 @@ void sendDataPacketCallback() {
   // Zero our sensor data object
   outputData = SensorData_init_zero;
   // Set some fields in the output data
-  // Compute the current NTP time with currentmillis - syncmillis + synctime
+  // Compute the current NTP time with currentmillis - syncmillis + synctime * 1000 (since synctime is in seconds)
   // FIXME: This will have issues if millis overflows back to 0. This should probably trigger an NTP sync. Set this
   // up once we have a ntp sync task
-  outputData.timestamp = millis() - NTPSyncMillis + NTPSyncTime;
+  outputData.timestamp = millis() - NTPSyncMillis + NTPSyncTime * 1000;
   outputData.has_timestamp = true;
 
   outputData.temperatureSampleRate = TEMP_HUMIDITY_SAMPLE_RATE;

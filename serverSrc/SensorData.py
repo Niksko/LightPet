@@ -17,7 +17,8 @@ class SensorData:
 
     @property
     def timestamp(self):
-        return datetime.datetime.utcfromtimestamp(self.protobuf_object.timestamp)
+        # Convert to a utc timestamp, dividing by 1000
+        return datetime.datetime.utcfromtimestamp(self.protobuf_object.timestamp/1000)
 
     @property
     def temperatureSampleRate(self):
