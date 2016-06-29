@@ -56,14 +56,31 @@ class SensorData:
     def chipID(self):
         return self.protobuf_object.chipID
 
+    def asDict(self):
+        d = {}
+        d['time'] = self.timestamp
+        d['temperatureSampleRate'] = self.temperatureSampleRate
+        d['humiditySampleRate'] = self.humiditySampleRate
+        d['audioSampleRate'] = self.audioSampleRate
+        d['lightSampleRate'] = self.lightSampleRate
+        d['temperatureData'] = self.temperatureData
+        d['humidityData'] = self.humidityData
+        d['audioData'] = self.audioData
+        d['lightData'] = self.lightData
+        d['chipID'] = self.chipID
+        return d
+
     def __repr__(self):
+        return str(self.asDict())
+
+    def __str__(self):
         returnVal = 'Time: {}\n'.format(str(self.timestamp))
         returnVal += 'Sample rates: {}Hz (temp and humidity), {}Hz (audio), {}Hz (light)\n'.format(
             self.temperatureSampleRate,
             self.audioSampleRate,
             self.lightSampleRate)
-        returnVal += 'Temperature data: {}\n'.format(self.temperatureData)
-        returnVal += 'Humidity data: {}\n'.format(self.humidityData)
+        returnVal += 'Temperature data (degrees C): {}\n'.format(self.temperatureData)
+        returnVal += 'Humidity data (%): {}\n'.format(self.humidityData)
         returnVal += 'Audio data: {}\n'.format(self.audioData)
         returnVal += 'Light data: {}\n'.format(self.lightData)
         return returnVal
