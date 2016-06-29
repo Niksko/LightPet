@@ -14,9 +14,10 @@ SERVER_ADVERTISEMENT_TIMEOUT = 10
 
 async def advertise(socket, message, port):
     """Advertise the service on the given socket then wait"""
-    await socket.sendto(message.encode('ASCII'), ("10.0.0.255", port))
-    print("Sent server advertisement")
-    await curio.sleep(SERVER_ADVERTISEMENT_TIMEOUT)
+    while True:
+        await socket.sendto(message.encode('ASCII'), ("10.0.0.255", port))
+        print("Sent server advertisement")
+        await curio.sleep(SERVER_ADVERTISEMENT_TIMEOUT)
 
 async def data_handler(data):
         # Get that data into an object
