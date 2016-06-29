@@ -3,10 +3,9 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('..'))
 
+from SensorData import SensorData
 from socket import *
 from LightPet.common.write_config_header import load_config_fromfile
-from sensorData_pb2 import SensorData
-
 from google.protobuf.message import DecodeError
 
 
@@ -31,25 +30,13 @@ def main():
     while True:
         data, addr = udpSocket.recvfrom(512)
 
-        # Get that data into an object from our protobuf
+        # Get that data into an object
         data_object = SensorData()
         try:
             data_object.ParseFromString(data)
-
-            # Dump this object to the console
-            print(data_object.timestamp)
-            print(data_object.temperatureSampleRate)
-            print(data_object.humiditySampleRate)
-            print(data_object.audioSampleRate)
-            print(data_object.lightSampleRate)
-            print(data_object.temperatureData)
-            print(data_object.humidityData)
-            print(data_object.audioData)
-            print(data_object.lightData)
-            print(data_object.chipID)
+            print(str(data_object))
         except DecodeError:
             print("Received non-protobuf encoded message (probably an advertisement)")
-
 
 if __name__ == '__main__':
     main()
