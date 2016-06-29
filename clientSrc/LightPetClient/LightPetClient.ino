@@ -48,6 +48,9 @@
 // Define the max size of our udp packet
 #define UDP_MAX_SIZE 1024
 
+// Define how often to resync with the NTP server in ms
+#define NTP_SYNC_TIMEOUT 3600
+
 // Variables used to store data values read from sensors
 uint16_t microphoneData[MICROPHONE_SAMPLE_RATE + DATA_BUFFER_SIZE];
 uint16_t lightData[LIGHT_SAMPLE_RATE + DATA_BUFFER_SIZE];
@@ -78,9 +81,10 @@ void readTempHumidityCallback();
 void sendDataPacketCallback();
 void sendClientServiceMessageCallback();
 void listenForUDPPacketCallback();
+void NTPSyncCallback();
 
 // function prototype for ntpUnixTime
-unsigned long ntpUnixTime(WiFiUDP &udp);
+uint64_t ntpUnixTime(WiFiUDP &udp);
 
 // Task objects used for task scheduling
 Task readMic(MS_PER_SECOND / MICROPHONE_SAMPLE_RATE, TASK_FOREVER, &readMicCallback);
@@ -89,6 +93,7 @@ Task readTempHumidity(MS_PER_SECOND / TEMP_HUMIDITY_SAMPLE_RATE, TASK_FOREVER, &
 Task sendDataPacket(MS_PER_SECOND / DATA_SEND_RATE, TASK_FOREVER, &sendDataPacketCallback);
 Task sendClientServiceMessage(MS_PER_SECOND * ADVERTISEMENT_RATE, TASK_FOREVER, &sendClientServiceMessageCallback);
 Task listenForUDPPacket(MS_PER_SECOND / DATA_RECEIVE_RATE, TASK_FOREVER, &listenForUDPPacketCallback);
+Task NTPSync(MS_PER_SECOND * NTP_SYNC_TIMEOUT, TASK_FOREVER, &NTPSyncCallback);
 
 // Set up a scheduler to schedule all of these tasks
 Scheduler taskRunner;
@@ -104,8 +109,8 @@ WiFiUDP udp;
 
 // Create a variable to hold the Unix time during setup, as well as a variable to hold the current millis when
 // we got this time. This way we can compute current NTP time by comparison
-unsigned long NTPSyncTime;
-unsigned long NTPSyncMillis;
+uint64_t NTPSyncTime;
+uint64_t NTPSyncMillis;
 
 // Set up the server magic string in a constant string variable
 const char serverMagicString[] = SERVER_SERVICE_MESSAGE;
@@ -146,18 +151,14 @@ void setup() {
   taskRunner.addTask(sendDataPacket);
   taskRunner.addTask(sendClientServiceMessage);
   taskRunner.addTask(listenForUDPPacket);
+  taskRunner.addTask(NTPSync);
+  NTPSync.enable();
   readMic.enable();
   readLight.enable();
   readTempHumidity.enable();
   sendDataPacket.enable();
   sendClientServiceMessage.enable();
   listenForUDPPacket.enable();
-
-  // Get the time from an NTP server. For the moment we will just do this once, but it might make sense to do this
-  // as a task every so often to prevent clock drift
-  static WiFiUDP timeUDP;
-  NTPSyncTime = ntpUnixTime(timeUDP);
-  NTPSyncMillis = millis();
 }
 
 // Helper function that configures the input select lines of the MUX so that the mic is feeding data to A0
@@ -227,6 +228,13 @@ void listenForUDPPacketCallback() {
   }
 }
 
+void NTPSyncCallback() {
+  // Get the time from an NTP server and set NTP sync values appropriately
+  static WiFiUDP timeUDP;
+  NTPSyncTime = ntpUnixTime(timeUDP);
+  NTPSyncMillis = (uint64_t) millis();
+}
+
 void sendDataPacketCallback() {
   // Zero our sensor data object
   outputData = SensorData_init_zero;
@@ -234,7 +242,7 @@ void sendDataPacketCallback() {
   // Compute the current NTP time with currentmillis - syncmillis + synctime * 1000 (since synctime is in seconds)
   // FIXME: This will have issues if millis overflows back to 0. This should probably trigger an NTP sync. Set this
   // up once we have a ntp sync task
-  outputData.timestamp = millis() - NTPSyncMillis + NTPSyncTime * 1000;
+  outputData.timestamp = ((uint64_t) millis()) - NTPSyncMillis + (NTPSyncTime * 1000);
   outputData.has_timestamp = true;
 
   outputData.temperatureSampleRate = TEMP_HUMIDITY_SAMPLE_RATE;
@@ -447,7 +455,7 @@ bool encodeAudioData(pb_ostream_t *stream, const pb_field_t *field, void * const
  * The Unix time is returned, that is, seconds from 1970-01-01T00:00.
  */
 
-unsigned long inline ntpUnixTime(WiFiUDP &udp)
+uint64_t inline ntpUnixTime(WiFiUDP &udp)
 {
   static int udpInited = udp.begin(123); // open socket on arbitrary port
 
@@ -504,7 +512,7 @@ unsigned long inline ntpUnixTime(WiFiUDP &udp)
   // Discard the rest of the packet
   udp.flush();
 
-  return time - 2208988800ul;   // convert NTP time to Unix time
+  return (uint64_t) time - 2208988800ul;   // convert NTP time to Unix time
 }
 
 void loop() {
