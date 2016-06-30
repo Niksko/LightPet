@@ -46,11 +46,11 @@ class SensorData:
 
     @property
     def audioData(self):
-        return self.protobuf_object.audioData
+        return list(self.protobuf_object.audioData)
 
     @property
     def lightData(self):
-        return self.protobuf_object.lightData
+        return list(self.protobuf_object.lightData)
 
     @property
     def chipID(self):
@@ -58,7 +58,7 @@ class SensorData:
 
     def asDict(self):
         d = {}
-        d['time'] = self.timestamp
+        d['time'] = self.timestamp.timestamp()  # Get unix time so that it can be parsed as JSON
         d['temperatureSampleRate'] = self.temperatureSampleRate
         d['humiditySampleRate'] = self.humiditySampleRate
         d['audioSampleRate'] = self.audioSampleRate
