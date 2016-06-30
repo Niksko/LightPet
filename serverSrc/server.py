@@ -7,6 +7,8 @@ from curio.socket import *
 import curio
 import logging
 import json
+import datetime
+
 from SensorData import SensorData
 from LightPet.common.write_config_header import load_config_fromfile
 from google.protobuf.message import DecodeError
@@ -44,7 +46,7 @@ async def main():
     logging.basicConfig(level=logging.INFO)
 
     logger = logging.getLogger(__name__)
-    fh = logging.FileHandler('log.txt')
+    fh = logging.FileHandler(datetime.datetime.utcnow().isoformat() + 'lightpet.log')
     fh.addFilter(filter_data)
     logger.addHandler(fh)
 
