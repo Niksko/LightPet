@@ -51,6 +51,12 @@
 // Define how often to resync with the NTP server in ms
 #define NTP_SYNC_TIMEOUT 3600
 
+// Make a typdef to define an array with associated size. This will be used to encode packed arrays in protobufs
+typedef struct _ArrayWithSize {
+  uint32_t **array;
+  size_t arraySize;
+} ArrayWithSize;
+
 // Variables used to store data values read from sensors
 uint16_t microphoneData[MICROPHONE_SAMPLE_RATE + DATA_BUFFER_SIZE];
 uint16_t lightData[LIGHT_SAMPLE_RATE + DATA_BUFFER_SIZE];
@@ -261,11 +267,29 @@ void sendDataPacketCallback() {
   outputData.has_chipID = true;
 
   // Setup the callback functions for the variable length packed data segments
-  outputData.temperatureData.funcs.encode = &encodeTemperatureData;
-  outputData.humidityData.funcs.encode = &encodeHumidityData;
-  outputData.audioData.funcs.encode = &encodeAudioData;
-  outputData.lightData.funcs.encode = &encodeLightData;
+  outputData.temperatureData.funcs.encode = &encodePackedArray;
+  outputData.humidityData.funcs.encode = &encodePackedArray;
+  outputData.audioData.funcs.encode = &encodePackedArray;
+  outputData.lightData.funcs.encode = &encodePackedArray;
+
+  // Setup the arguments for these functions
+  ArrayWithSize arg[4];
+  arg[0].array = (uint32_t**)&temperatureData;
+  arg[0].arraySize = temperatureDataSize;
+  outputData.temperatureData.arg = &(arg[0]);
+
+  arg[1].array = (uint32_t**)&humidityData;
+  arg[1].arraySize = humidityDataSize;
+  outputData.humidityData.arg = &(arg[1]);
+
+  arg[2].array = (uint32_t**)&lightData;
+  arg[2].arraySize = lightDataSize;
+  outputData.lightData.arg = &(arg[2]);
  
+  arg[3].array = (uint32_t**)&microphoneData;
+  arg[3].arraySize = microphoneDataSize;
+  outputData.audioData.arg = &(arg[3]);
+
   // Setup the output stream for our protobuf encode to output to our outputBuffer
   outputStream = pb_ostream_from_buffer(outputBuffer, sizeof(outputBuffer));
 
@@ -303,14 +327,18 @@ void sendDataPacketCallback() {
   microphoneDataSize = 0;
 }
 
-bool encodeTemperatureData(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
+bool encodePackedArray(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
   // First, set up a substream that we will use to figure out the length of our data
   pb_ostream_t dummySubstream = PB_OSTREAM_SIZING;
   size_t dataLength;
 
+  ArrayWithSize *localArg = (ArrayWithSize*) *arg;
+
   // Write all of the data from the temperature data array to the dummy substream, then check the bytes written
-  for (int i = 0; i < temperatureDataSize; i++) {
-    pb_encode_varint(&dummySubstream, (uint64_t) temperatureData[i]);
+  size_t arraySize = localArg->arraySize;
+  uint32_t **localValues = localArg->array;
+  for (int i = 0; i < arraySize; i++) {
+    pb_encode_varint(&dummySubstream, (uint64_t) localValues[i]);
   }
 
   // Get the bytes written
@@ -329,113 +357,8 @@ bool encodeTemperatureData(pb_ostream_t *stream, const pb_field_t *field, void *
   }
 
   // Finally encode the data as varints
-  for (int i = 0; i < temperatureDataSize; i++) {
-    if (! pb_encode_varint(stream, (uint64_t) temperatureData[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool encodeHumidityData(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
-  // First, set up a substream that we will use to figure out the length of our data
-  pb_ostream_t dummySubstream = PB_OSTREAM_SIZING;
-  size_t dataLength;
-
-  // Write all of the data from the temperature data array to the dummy substream, then check the bytes written
-  for (int i = 0; i < humidityDataSize; i++) {
-    pb_encode_varint(&dummySubstream, (uint64_t) humidityData[i]);
-  }
-
-  // Get the bytes written
-  dataLength = dummySubstream.bytes_written;
-
-  // Now we can actually do the encoding on the real stream
-  // First encode the tag and field type. Since this is a packed array, we use the PB_WT_STRING type to denote that
-  // it is length delimited
-  if (!pb_encode_tag(stream, PB_WT_STRING, field->tag)) {
-    return false;
-  }
-
-  // Next encode the data length we just found
-  if (!pb_encode_varint(stream, (uint64_t) dataLength)) {
-    return false;
-  }
-
-  // Finally encode the data as varints
-  for (int i = 0; i < humidityDataSize; i++) {
-    if (! pb_encode_varint(stream, (uint64_t) humidityData[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool encodeLightData(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
-  // First, set up a substream that we will use to figure out the length of our data
-  pb_ostream_t dummySubstream = PB_OSTREAM_SIZING;
-  size_t dataLength;
-
-  // Write all of the data from the temperature data array to the dummy substream, then check the bytes written
-  for (int i = 0; i < lightDataSize; i++) {
-    pb_encode_varint(&dummySubstream, (uint64_t) lightData[i]);
-  }
-
-  // Get the bytes written
-  dataLength = dummySubstream.bytes_written;
-
-  // Now we can actually do the encoding on the real stream
-  // First encode the tag and field type. Since this is a packed array, we use the PB_WT_STRING type to denote that
-  // it is length delimited
-  if (!pb_encode_tag(stream, PB_WT_STRING, field->tag)) {
-    return false;
-  }
-
-  // Next encode the data length we just found
-  if (!pb_encode_varint(stream, (uint64_t) dataLength)) {
-    return false;
-  }
-
-  // Finally encode the data as varints
-  for (int i = 0; i < lightDataSize; i++) {
-    if (! pb_encode_varint(stream, (uint64_t) lightData[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool encodeAudioData(pb_ostream_t *stream, const pb_field_t *field, void * const *arg) {
-  // First, set up a substream that we will use to figure out the length of our data
-  pb_ostream_t dummySubstream = PB_OSTREAM_SIZING;
-  size_t dataLength;
-
-  // Write all of the data from the temperature data array to the dummy substream, then check the bytes written
-  for (int i = 0; i < microphoneDataSize; i++) {
-    pb_encode_varint(&dummySubstream, (uint64_t) microphoneData[i]);
-  }
-
-  // Get the bytes written
-  dataLength = dummySubstream.bytes_written;
-
-  // Now we can actually do the encoding on the real stream
-  // First encode the tag and field type. Since this is a packed array, we use the PB_WT_STRING type to denote that
-  // it is length delimited
-  if (!pb_encode_tag(stream, PB_WT_STRING, field->tag)) {
-    return false;
-  }
-
-  // Next encode the data length we just found
-  if (!pb_encode_varint(stream, (uint64_t) dataLength)) {
-    return false;
-  }
-
-  // Finally encode the data as varints
-  for (int i = 0; i < microphoneDataSize; i++) {
-    if (! pb_encode_varint(stream, (uint64_t) microphoneData[i])) {
+  for (int i = 0; i < arraySize; i++) {
+    if (! pb_encode_varint(stream, (uint64_t) localValues[i])) {
       return false;
     }
   }
