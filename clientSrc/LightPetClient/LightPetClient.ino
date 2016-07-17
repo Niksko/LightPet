@@ -22,6 +22,9 @@
 #define SDA_PIN D2
 #define ANALOG_PIN A0
 
+// Just to avoid magic numbers, define the ms in a second
+#define MS_PER_SECOND 1000
+
 // Make a typdef to define an array with associated size. This will be used to encode packed arrays in protobufs
 typedef struct _ArrayWithSize {
   uint32_t **array;
