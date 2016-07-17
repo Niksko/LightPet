@@ -23,9 +23,9 @@
 #define ANALOG_PIN A0
 
 // Rates at which data is read from sensors. Values are in Hz
-#define MICROPHONE_SAMPLE_RATE 20
-#define LIGHT_SAMPLE_RATE 20
-#define TEMP_HUMIDITY_SAMPLE_RATE 5
+#define MICROPHONE_SAMPLE_RATE 20000
+#define LIGHT_SAMPLE_RATE 20000
+#define TEMP_HUMIDITY_SAMPLE_RATE 1
 
 // Define how much to buffer our data arrays by, in case of timing errors causing them to fill before they're emptied
 #define DATA_BUFFER_SIZE 3
@@ -34,19 +34,19 @@
 #define MS_PER_SECOND 1000
 
 // Define how often to generate a data packet. Value in Hz
-#define DATA_SEND_RATE 1
+#define DATA_SEND_RATE 50
 
 // Define how often to check for received UDP packets. Value in Hz
 #define DATA_RECEIVE_RATE 50
 
 // Define the size of the output buffer
-#define OUTPUT_BUFFER_SIZE 512
+#define OUTPUT_BUFFER_SIZE 8092
 
 // Define how often we advertise ourselves in seconds
 #define ADVERTISEMENT_RATE 10
 
 // Define the max size of our udp packet
-#define UDP_MAX_SIZE 1024
+#define UDP_MAX_SIZE 8092
 
 // Define how often to resync with the NTP server in ms
 #define NTP_SYNC_TIMEOUT 3600
@@ -58,10 +58,10 @@ typedef struct _ArrayWithSize {
 } ArrayWithSize;
 
 // Variables used to store data values read from sensors
-uint16_t microphoneData[MICROPHONE_SAMPLE_RATE + DATA_BUFFER_SIZE];
-uint16_t lightData[LIGHT_SAMPLE_RATE + DATA_BUFFER_SIZE];
-uint32_t temperatureData[TEMP_HUMIDITY_SAMPLE_RATE + DATA_BUFFER_SIZE];
-uint32_t humidityData[TEMP_HUMIDITY_SAMPLE_RATE + DATA_BUFFER_SIZE];
+uint32_t microphoneData[MICROPHONE_SAMPLE_RATE / DATA_SEND_RATE + DATA_BUFFER_SIZE];
+uint32_t lightData[LIGHT_SAMPLE_RATE / DATA_SEND_RATE + DATA_BUFFER_SIZE];
+uint32_t temperatureData[TEMP_HUMIDITY_SAMPLE_RATE / DATA_SEND_RATE + DATA_BUFFER_SIZE];
+uint32_t humidityData[TEMP_HUMIDITY_SAMPLE_RATE / DATA_SEND_RATE + DATA_BUFFER_SIZE];
 si7021_env envData;
 
 // Variables used to store the size of valid data in the sensor data arrays
